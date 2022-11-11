@@ -1,4 +1,6 @@
-﻿public class LevelComparer : IComparer<Level>
+﻿
+namespace LevelsFinder;
+public class LevelComparer : IComparer<Level>
 {
     public int Compare(Level? x, Level? y)
     {

@@ -1,9 +1,10 @@
-﻿using ClusteringTuts;
-using Kneedle;
+﻿using Kneedle;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 using System.Reflection.Emit;
+
+namespace LevelsFinder;
 
 public class LevelEstimatorService
 {
@@ -79,6 +80,10 @@ public class LevelEstimatorService
         return MinMax(data, Convert.ToInt32(kneed), preds.Select(x => (int)x).ToArray());
     }
 
+    public List<Level> FindLevels(double[] data)
+    {
+        return FindLevels(data.Select(x => (float)x).ToArray());
+    }
     private static float CalculateDistance(float x, float y, int k = 2)
     => (float)Math.Sqrt(Math.Pow(x - y, k));
 
