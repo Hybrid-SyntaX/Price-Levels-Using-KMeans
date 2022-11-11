@@ -77,6 +77,8 @@ public class LevelEstimatorService
             throw new ApplicationException("Data length must be more than max knee value");
         }
 
+        data = data.SkipWhile(x => double.IsNaN(x)).ToArray();
+
         var elbows = Elbow(data,_maxKee).ToArray();
 
         var k = Enumerable.Range(1, _maxKee).Select(x => (double)x).ToArray();
