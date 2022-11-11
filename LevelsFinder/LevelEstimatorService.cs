@@ -8,12 +8,14 @@ namespace LevelsFinder;
 
 public class LevelEstimatorService
 {
-    private MLContext _mlContext;
+    private readonly MLContext _mlContext;
+    private readonly int _maxKee;
 
-    public LevelEstimatorService(MLContext mLContext)
+    public LevelEstimatorService(int? seed, int maxKee=10)
 	{
-		this._mlContext = mLContext;
-	}
+		this._mlContext = new MLContext(seed);
+        _maxKee = maxKee;
+    }
 
     public TransformerChain<ClusteringPredictionTransformer<KMeansModelParameters>> Cluster(float[] data, int numberOfClusters = 3)
     {
@@ -70,9 +72,14 @@ public class LevelEstimatorService
     }
     public List<Level> FindLevels(float[] data)
     {
-        var elbows = Elbow(data).ToArray();
+        if(data.Length < _maxKee)
+        {
+            throw new ApplicationException("Data length must be more than max knee value");
+        }
 
-        var k = Enumerable.Range(1, 10).Select(x => (double)x).ToArray();
+        var elbows = Elbow(data,_maxKee).ToArray();
+
+        var k = Enumerable.Range(1, _maxKee).Select(x => (double)x).ToArray();
         var kneed = KneedleAlgorithm.CalculateKneePoints(k, elbows, CurveDirection.Decreasing, Curvature.Counterclockwise, forceLinearInterpolation: false);
         var clusterTransformer = Cluster(data, numberOfClusters: Convert.ToInt32(kneed));
         var predictor = _mlContext.Model.CreatePredictionEngine<FloatData, ClusterPrediction>(clusterTransformer);
