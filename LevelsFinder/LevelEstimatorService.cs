@@ -11,17 +11,26 @@ public class LevelEstimatorService
     private readonly MLContext _mlContext;
     private readonly int _maxKee;
 
-    public LevelEstimatorService(int? seed, int maxKee=10)
-	{
-		this._mlContext = new MLContext(seed);
+    public LevelEstimatorService(int? seed, int maxKee = 10)
+    {
+        this._mlContext = new MLContext(seed);
         _maxKee = maxKee;
     }
 
     public TransformerChain<ClusteringPredictionTransformer<KMeansModelParameters>> Cluster(float[] data, int numberOfClusters = 3)
     {
+
+        numberOfClusters = OptimizeNumberOfClusters(data.Length, numberOfClusters);
+
         IDataView dataView = _mlContext.Data.LoadFromEnumerable(FloatData.FromFloat(data));
 
-        var kmeans = _mlContext.Clustering.Trainers.KMeans(numberOfClusters: numberOfClusters);
+        var options = new KMeansTrainer.Options
+        {
+            InitializationAlgorithm = KMeansTrainer.InitializationAlgorithm.KMeansYinyang,
+            NumberOfClusters = numberOfClusters
+        };
+
+        var kmeans = _mlContext.Clustering.Trainers.KMeans(options);
         var pipeline = _mlContext.Transforms
                      .Concatenate("Features", "Value")
                      .Append(kmeans);
@@ -29,6 +38,8 @@ public class LevelEstimatorService
         return pipeline.Fit(dataView);
 
     }
+
+
 
     public IEnumerable<double> Elbow(float[] data, int maxK = 10)
     {
@@ -89,12 +100,28 @@ public class LevelEstimatorService
         return MinMax(data, Convert.ToInt32(kneed), preds.Select(x => (int)x).ToArray());
     }
 
-    public List<Level> FindLevels(double[] data)
+    public IEnumerable<Level> FindLevels(double[] data)
     {
         return FindLevels(data.Select(x => (float)x).ToArray());
     }
     private static float CalculateDistance(float x, float y, int k = 2)
     => (float)Math.Sqrt(Math.Pow(x - y, k));
 
+    /// <summary>
+    /// A remedy against the times that examples are too few and we don't want algorithm to fail.
+    /// </summary>
+    /// <param name="dataLength"></param>
+    /// <param name="numberOfClusters"></param>
+    /// <returns></returns>
+    private static int OptimizeNumberOfClusters(int dataLength, int numberOfClusters)
+    {
+        if (numberOfClusters == 0)
+            return 1;
+
+        if (dataLength / numberOfClusters > 0.09 * dataLength)
+            return numberOfClusters;
+        else
+            return OptimizeNumberOfClusters(dataLength, numberOfClusters - 1);
+    }
 }
 
