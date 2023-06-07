@@ -4,7 +4,17 @@ public class Level : IComparable<Level>, IComparer<Level>
 {
     public float Min { set; get; } = float.PositiveInfinity;
     public float Max { set; get; } = float.NegativeInfinity;
-    public float Mean => (Min + Max) / 2;
+    public float Mean
+    {
+        get
+        {
+            if (float.IsInfinity(Min) && !float.IsInfinity(Max))
+                return Max;
+            else if (!float.IsInfinity(Min) && float.IsInfinity(Max))
+                return Min;
+            return (Min + Max) / 2;
+        }
+    }
 
     public int Compare(Level? x, Level? y)
     {
